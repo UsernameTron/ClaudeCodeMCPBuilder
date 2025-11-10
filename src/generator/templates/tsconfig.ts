@@ -1,0 +1,22 @@
+export function generateTsConfig() {
+  return {
+    compilerOptions: {
+      target: 'ES2022',
+      module: 'ES2022',
+      lib: ['ES2022'],
+      moduleResolution: 'node',
+      outDir: './dist',
+      rootDir: './src',
+      strict: true,
+      esModuleInterop: true,
+      skipLibCheck: true,
+      forceConsistentCasingInFileNames: true,
+      resolveJsonModule: true,
+      declaration: true,
+      sourceMap: true,
+      types: ['node']
+    },
+    include: ['src/**/*'],
+    exclude: ['node_modules', 'dist', '**/*.test.ts']
+  };
+}
