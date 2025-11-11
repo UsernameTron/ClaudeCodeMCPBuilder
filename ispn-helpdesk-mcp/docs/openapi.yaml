@@ -1,0 +1,538 @@
+openapi: 3.0.3
+info:
+  title: ISPN Helpdesk Bridge API
+  version: 1.0.0
+  description: |
+    HTTP API for the ISPN Helpdesk Bridge MCP Server.
+
+    This API provides webhook endpoints for ElevenLabs agent handoffs to helpdesk tickets.
+    Includes ticket deduplication, idempotency support, and comprehensive error handling.
+
+    **Features:**
+    - Dual authentication (shared token + HMAC signature)
+    - Rate limiting (10 req/sec per client)
+    - Idempotency support via Idempotency-Key header
+    - Replay attack prevention for HMAC
+    - Structured error responses
+
+  contact:
+    name: API Support
+    email: support@example.com
+  license:
+    name: ISC
+    url: https://opensource.org/licenses/ISC
+
+servers:
+  - url: http://localhost:3000
+    description: Development server
+  - url: https://api.example.com
+    description: Production server
+
+tags:
+  - name: Health
+    description: Health check endpoints
+  - name: Ingest
+    description: Ticket ingestion endpoints
+
+paths:
+  /healthz:
+    get:
+      tags:
+        - Health
+      summary: Liveness probe
+      description: |
+        Basic health check endpoint. Returns 200 if the service is running.
+        Use for Kubernetes liveness probes or basic monitoring.
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                status: ok
+                service: ispn-helpdesk-bridge
+                timestamp: '2025-11-11T16:30:00.000Z'
+
+  /readyz:
+    get:
+      tags:
+        - Health
+      summary: Readiness probe
+      description: |
+        Readiness check endpoint. Verifies all dependencies (helpdesk API) are healthy.
+        Returns 200 if ready, 503 if not ready.
+        Use for Kubernetes readiness probes or load balancer health checks.
+      operationId: readinessCheck
+      responses:
+        '200':
+          description: Service is ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadinessResponse'
+              example:
+                status: ready
+                service: ispn-helpdesk-bridge
+                checks:
+                  helpdesk: healthy
+                timestamp: '2025-11-11T16:30:00.000Z'
+        '503':
+          description: Service is not ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadinessResponse'
+              example:
+                status: unavailable
+                service: ispn-helpdesk-bridge
+                checks:
+                  helpdesk: unhealthy
+                timestamp: '2025-11-11T16:30:00.000Z'
+
+  /ingest/oa-handoff:
+    post:
+      tags:
+        - Ingest
+      summary: Outage Agent handoff
+      description: |
+        Complete OA handoff workflow. Finds existing ticket or creates new one.
+
+        **Deduplication Strategy:**
+        1. If oaKey provided: Look for ticket with matching oaKey
+        2. If callerNumber + category provided: Look for recent ticket
+        3. If no match: Create new ticket
+
+        **Authentication:**
+        - Shared token: Provide x-auth-token header
+        - HMAC signature: Provide x-signature + x-timestamp headers
+
+        **Idempotency:**
+        - Provide Idempotency-Key header to prevent duplicate submissions
+        - Same key + same payload = cached response (200)
+        - Same key + different payload = conflict error (409)
+
+      operationId: oaHandoff
+      security:
+        - SharedToken: []
+        - HMACSignature: []
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          description: Optional idempotency key for duplicate detection
+          schema:
+            type: string
+            example: 'uuid-or-unique-id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OAHandoffRequest'
+            examples:
+              minimal:
+                summary: Minimal request
+                value:
+                  note: "Category: WiFi\nReason: CallerRequested\nSummary: Customer unable to connect\nConfidence: 0.85"
+              full:
+                summary: Full request with all fields
+                value:
+                  note: "Category: Outage\nReason: TwoStepsNoResolve\nSummary: Complete service outage in area\nConfidence: 0.95"
+                  category: Outage
+                  escalationReason: TwoStepsNoResolve
+                  confidence: '0.95'
+                  callerNumber: '+12345678900'
+                  oaKey: 'oa-12345'
+                  source: OutageAgent
+      responses:
+        '200':
+          description: Ticket created or found successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OAHandoffResponse'
+              examples:
+                created:
+                  summary: New ticket created
+                  value:
+                    status: ok
+                    created: true
+                    ticketId: TKT-1000
+                    ticketUrl: 'https://helpdesk.example.com/tickets/1000'
+                    category: WiFi
+                    escalationReason: CallerRequested
+                    confidence: '0.85'
+                    echo:
+                      oaKey: 'oa-12345'
+                      callerNumber: '+12345678900'
+                found:
+                  summary: Existing ticket found (deduplication)
+                  value:
+                    status: ok
+                    created: false
+                    ticketId: TKT-1000
+                    ticketUrl: 'https://helpdesk.example.com/tickets/1000'
+                    category: WiFi
+                    escalationReason: CallerRequested
+                    confidence: '0.85'
+                    echo:
+                      oaKey: 'oa-12345'
+                      callerNumber: '+12345678900'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: error
+                code: VALIDATION_ERROR
+                message: 'Invalid request payload'
+                details:
+                  note:
+                    _errors: ['Required']
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: error
+                code: AUTH_REQUIRED
+                message: 'Authentication required (provide x-auth-token or x-signature + x-timestamp)'
+        '403':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: error
+                code: AUTH_FAILED
+                message: 'Invalid authentication credentials'
+        '409':
+          description: Idempotency conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: error
+                code: IDEMPOTENCY_CONFLICT
+                message: 'Idempotency key reused with different payload'
+        '429':
+          description: Rate limit exceeded
+          headers:
+            RateLimit-Limit:
+              description: Maximum requests per window
+              schema:
+                type: integer
+                example: 10
+            RateLimit-Remaining:
+              description: Remaining requests in current window
+              schema:
+                type: integer
+                example: 0
+            RateLimit-Reset:
+              description: Time when the rate limit resets (epoch seconds)
+              schema:
+                type: integer
+                example: 1699891200
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: error
+                code: RATE_LIMIT_EXCEEDED
+                message: 'Too many requests. Rate limit: 10 requests per second'
+                retryAfter: 1
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: error
+                code: INTERNAL_ERROR
+                message: 'An unexpected error occurred'
+
+components:
+  securitySchemes:
+    SharedToken:
+      type: apiKey
+      in: header
+      name: x-auth-token
+      description: |
+        Shared token authentication for simple clients.
+
+        **Usage:**
+        ```
+        x-auth-token: your-secret-token-here
+        ```
+
+        **Security:**
+        - Change default token in production
+        - Rotate regularly
+        - Use HTTPS in production
+
+    HMACSignature:
+      type: apiKey
+      in: header
+      name: x-signature
+      description: |
+        HMAC signature authentication for webhook security.
+
+        **Required Headers:**
+        - x-signature: sha256=<hex_digest>
+        - x-timestamp: <unix_timestamp_ms>
+
+        **Signature Calculation:**
+        ```
+        payload = timestamp + rawBody
+        signature = HMAC-SHA256(webhookSecret, payload)
+        x-signature = "sha256=" + hex(signature)
+        ```
+
+        **Replay Protection:**
+        - Requests outside 5-minute window are rejected
+        - Signature deduplication prevents replay attacks
+
+        **Example:**
+        ```
+        x-signature: sha256=a1b2c3d4e5f6...
+        x-timestamp: 1699891200000
+        ```
+
+  schemas:
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - service
+        - timestamp
+      properties:
+        status:
+          type: string
+          enum: [ok]
+          description: Health status
+        service:
+          type: string
+          example: ispn-helpdesk-bridge
+          description: Service name
+        timestamp:
+          type: string
+          format: date-time
+          description: Response timestamp (ISO 8601)
+
+    ReadinessResponse:
+      type: object
+      required:
+        - status
+        - service
+        - timestamp
+      properties:
+        status:
+          type: string
+          enum: [ready, unavailable]
+          description: Readiness status
+        service:
+          type: string
+          example: ispn-helpdesk-bridge
+          description: Service name
+        checks:
+          type: object
+          properties:
+            helpdesk:
+              type: string
+              enum: [healthy, unhealthy]
+              description: Helpdesk API connectivity status
+        timestamp:
+          type: string
+          format: date-time
+          description: Response timestamp (ISO 8601)
+
+    OAHandoffRequest:
+      type: object
+      required:
+        - note
+      properties:
+        note:
+          type: string
+          minLength: 10
+          maxLength: 350
+          description: |
+            4-line formatted note (≤350 chars)
+
+            Format:
+            ```
+            Category: <category>
+            Reason: <escalationReason>
+            Summary: <summary>
+            Confidence: <confidence>
+            ```
+          example: "Category: WiFi\nReason: CallerRequested\nSummary: Customer unable to connect\nConfidence: 0.85"
+        category:
+          type: string
+          enum: [Outage, WiFi, CGNAT, Wiring, EquipmentReturn, Unknown]
+          description: Ticket category (optional, auto-inferred if missing)
+        escalationReason:
+          type: string
+          enum: [CallerRequested, TwoStepsNoResolve, OutOfScope, SafetyRisk, BillingOrAccount, Other]
+          description: Escalation reason (optional, auto-inferred if missing)
+        confidence:
+          type: string
+          pattern: '^0\.\d+$|^1\.0$'
+          default: '0.0'
+          description: Confidence score as string (0.0-1.0)
+          example: '0.85'
+        callerNumber:
+          type: string
+          pattern: '^\+[1-9]\d{1,14}$'
+          description: E.164 phone number (optional, used for deduplication)
+          example: '+12345678900'
+        oaKey:
+          type: string
+          description: Outage Agent key (optional, used for deduplication)
+          example: 'oa-12345'
+        source:
+          type: string
+          enum: [ATOM, OutageAgent, Other]
+          default: Other
+          description: Source system
+
+    OAHandoffResponse:
+      type: object
+      required:
+        - status
+        - created
+        - ticketId
+        - ticketUrl
+        - category
+        - escalationReason
+        - confidence
+        - echo
+      properties:
+        status:
+          type: string
+          enum: [ok]
+          description: Response status
+        created:
+          type: boolean
+          description: |
+            true = New ticket created
+            false = Existing ticket found (deduplication)
+        ticketId:
+          type: string
+          description: Helpdesk ticket ID
+          example: TKT-1000
+        ticketUrl:
+          type: string
+          format: uri
+          description: Helpdesk ticket URL
+          example: 'https://helpdesk.example.com/tickets/1000'
+        category:
+          type: string
+          description: Ticket category
+          example: WiFi
+        escalationReason:
+          type: string
+          description: Escalation reason
+          example: CallerRequested
+        confidence:
+          type: string
+          description: Confidence score
+          example: '0.85'
+        echo:
+          type: object
+          description: Echo back input fields for debugging
+          properties:
+            oaKey:
+              type: string
+              nullable: true
+            callerNumber:
+              type: string
+              nullable: true
+
+    ErrorResponse:
+      type: object
+      required:
+        - status
+        - code
+        - message
+      properties:
+        status:
+          type: string
+          enum: [error]
+          description: Error status
+        code:
+          type: string
+          description: Error code
+          enum:
+            - AUTH_REQUIRED
+            - AUTH_FAILED
+            - VALIDATION_ERROR
+            - IDEMPOTENCY_CONFLICT
+            - RATE_LIMIT_EXCEEDED
+            - HELPDESK_ERROR
+            - INTERNAL_ERROR
+            - NOT_FOUND
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: object
+          description: Additional error details (for validation errors)
+        retryAfter:
+          type: integer
+          description: Seconds to wait before retrying (for rate limit errors)
+
+  responses:
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Forbidden:
+      description: Authentication failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    BadRequest:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    TooManyRequests:
+      description: Rate limit exceeded
+      headers:
+        RateLimit-Limit:
+          schema:
+            type: integer
+        RateLimit-Remaining:
+          schema:
+            type: integer
+        RateLimit-Reset:
+          schema:
+            type: integer
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
