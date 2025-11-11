@@ -25,9 +25,9 @@ const loadEnvFile = (filePath: string) => {
         }
       }
     });
-    console.log(`Loaded environment variables from ${filePath}`);
+    console.error(`Loaded environment variables from ${filePath}`);
   } catch (error) {
-    console.warn(`Warning: Could not read environment file at ${filePath}:`, error);
+    console.error(`Warning: Could not read environment file at ${filePath}:`, error);
   }
 };
 
@@ -35,11 +35,11 @@ const loadEnvFile = (filePath: string) => {
 const cmdArgs = process.argv.slice(2);
 const envFileArgIndex = cmdArgs.findIndex(arg => arg === "--env-file");
 if (envFileArgIndex !== -1 && cmdArgs[envFileArgIndex + 1]) {
-  console.log("Loading environment variables from file:", cmdArgs[envFileArgIndex + 1]);
+  console.error("Loading environment variables from file:", cmdArgs[envFileArgIndex + 1]);
   const envFilePath = cmdArgs[envFileArgIndex + 1];
   loadEnvFile(envFilePath);
 } else {
-  console.log("No environment file provided");
+  // console.error("No environment file provided");
 }
 
 (async () => {
