@@ -292,4 +292,93 @@ describe('PathSanitizer', () => {
       expect(() => sanitizer.sanitize(validPath)).not.toThrow();
     });
   });
+
+  describe('validateExistingPath', () => {
+    it('should validate and resolve existing file path', async () => {
+      const fs = await import('fs');
+      const { mkdtemp, writeFile, realpath, rm } = fs.promises;
+      const tempRoot = await mkdtemp(path.join(os.tmpdir(), 'mcp-validate-test-'));
+      const testRoot = await realpath(tempRoot); // Resolve symlinks in temp path
+      const testSanitizer = new PathSanitizer(testRoot);
+      const testFile = path.join(testRoot, 'test-file.txt');
+
+      try {
+        await writeFile(testFile, 'test content');
+        const result = await testSanitizer.validateExistingPath('test-file.txt');
+        expect(result).toBe(testFile);
+      } finally {
+        await rm(testRoot, { recursive: true, force: true });
+      }
+    });
+
+    it('should throw error for non-existent path', async () => {
+      await expect(sanitizer.validateExistingPath('non-existent-file.txt'))
+        .rejects.toThrow('Path does not exist');
+    });
+
+    it('should resolve and validate symlinks', async () => {
+      const fs = await import('fs');
+      const { mkdtemp, writeFile, symlink, realpath, rm } = fs.promises;
+      const tempRoot = await mkdtemp(path.join(os.tmpdir(), 'mcp-symlink-test-'));
+      const testRoot = await realpath(tempRoot); // Resolve symlinks in temp path
+      const testSanitizer = new PathSanitizer(testRoot);
+      const targetFile = path.join(testRoot, 'target.txt');
+      const symlinkFile = path.join(testRoot, 'symlink.txt');
+
+      try {
+        await writeFile(targetFile, 'target content');
+        await symlink(targetFile, symlinkFile);
+        const result = await testSanitizer.validateExistingPath('symlink.txt');
+        expect(result).toBe(targetFile);
+      } finally {
+        await rm(testRoot, { recursive: true, force: true });
+      }
+    });
+
+    it('should throw error if symlink points outside root', async () => {
+      const fs = await import('fs');
+      const { mkdtemp, writeFile, symlink, realpath, rm } = fs.promises;
+      const tempRoot = await mkdtemp(path.join(os.tmpdir(), 'mcp-malicious-test-'));
+      const testRoot = await realpath(tempRoot); // Resolve symlinks in temp path
+      const testSanitizer = new PathSanitizer(testRoot);
+      const tempOutside = await mkdtemp(path.join(os.tmpdir(), 'mcp-outside-'));
+      const outsideTarget = await realpath(tempOutside); // Resolve symlinks
+      const outsideFile = path.join(outsideTarget, 'outside.txt');
+      const symlinkFile = path.join(testRoot, 'malicious-symlink.txt');
+
+      try {
+        await writeFile(outsideFile, 'outside content');
+        await symlink(outsideFile, symlinkFile);
+        await expect(testSanitizer.validateExistingPath('malicious-symlink.txt'))
+          .rejects.toThrow('Symlink points outside root boundary');
+      } finally {
+        await rm(testRoot, { recursive: true, force: true });
+        await rm(outsideTarget, { recursive: true, force: true });
+      }
+    });
+
+    it('should propagate other filesystem errors', async () => {
+      const fs = await import('fs');
+      const { mkdtemp, writeFile, chmod, realpath, rm } = fs.promises;
+      const tempRoot = await mkdtemp(path.join(os.tmpdir(), 'mcp-perms-test-'));
+      const testRoot = await realpath(tempRoot); // Resolve symlinks in temp path
+      const testSanitizer = new PathSanitizer(testRoot);
+      const testFile = path.join(testRoot, 'test-file.txt');
+
+      try {
+        await writeFile(testFile, 'test content');
+        await chmod(testFile, 0o000);
+        await expect(testSanitizer.validateExistingPath('test-file.txt'))
+          .rejects.toThrow();
+      } finally {
+        // Restore permissions for cleanup
+        try {
+          await chmod(testFile, 0o644);
+        } catch {
+          // Ignore errors during cleanup permission restore
+        }
+        await rm(testRoot, { recursive: true, force: true });
+      }
+    });
+  });
 });

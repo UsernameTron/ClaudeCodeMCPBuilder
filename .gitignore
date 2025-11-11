@@ -47,3 +47,23 @@ generated-servers/
 tmp/
 temp/
 *.tmp
+
+# Deployment verification artifacts
+deployment-verification/
+deployment-verification-*.tar.gz
+
+# Test output directories
+test-output/
+test-output-bundle/
+
+# Unrelated repositories (should be moved out)
+claude-agent-sdk-demos/
+claude-agent-sdk-python/
+claude-auto-documenter-v2/
+elevenlabs-mcp/
+mcpb/
+nanobanana-mcp/
+openai-image-gen-mcp/
+qwen-image-mcp/
+servers/
+servers-archived/

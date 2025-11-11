@@ -36,13 +36,16 @@
     "inquirer": "^9.2.0"
   },
   "devDependencies": {
+    "@types/diff": "^7.0.2",
     "@types/inquirer": "^9.0.0",
     "@types/node": "^20.11.0",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
     "@vitest/coverage-v8": "^4.0.8",
     "@vitest/ui": "^4.0.8",
+    "diff": "^8.0.2",
     "eslint": "^8.56.0",
+    "minimatch": "^10.1.1",
     "typescript": "^5.3.0",
     "vitest": "^4.0.8"
   },
