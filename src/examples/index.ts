@@ -1,13 +1,33 @@
 /**
  * Example Server Configurations
  *
- * This module provides pre-configured examples demonstrating different
- * MCP server patterns and use cases.
+ * This module provides both:
+ * 1. Stub examples for learning and quick starts (weather, filesystem, database)
+ * 2. Production-ready examples from Anthropic (memory, github, postgres, slack)
  */
 
+// Stub examples (for learning)
 export { weatherServerConfig } from './weather-server.js';
 export { filesystemServerConfig } from './filesystem-server.js';
 export { databaseServerConfig } from './database-server.js';
+
+// Production-ready examples
+export {
+  type ExampleServer,
+  EXAMPLE_SERVERS,
+  getAllExamples,
+  getExamplesByCategory,
+  getExamplesByComplexity,
+  getExampleById,
+  getNoAuthExamples,
+  getBeginnerExamples,
+} from './catalog.js';
+
+export {
+  type GenerateExampleOptions,
+  type GenerateExampleResult,
+  generateFromExample,
+} from './generator.js';
 
 import type { ServerConfig } from '../generator/types.js';
 import { weatherServerConfig } from './weather-server.js';
@@ -15,7 +35,7 @@ import { filesystemServerConfig } from './filesystem-server.js';
 import { databaseServerConfig } from './database-server.js';
 
 /**
- * All available example configurations
+ * All available stub example configurations (for template-based generation)
  */
 export const examples: Record<string, ServerConfig> = {
   weather: weatherServerConfig,
@@ -24,14 +44,14 @@ export const examples: Record<string, ServerConfig> = {
 };
 
 /**
- * Get example configuration by name
+ * Get stub example configuration by name
  */
 export function getExample(name: string): ServerConfig | undefined {
   return examples[name];
 }
 
 /**
- * List all available examples
+ * List all available stub examples
  */
 export function listExamples(): Array<{ name: string; description: string; type: string }> {
   return [

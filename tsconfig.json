@@ -21,6 +21,11 @@
     "node_modules",
     "dist",
     "**/*.test.ts",
-    "src/testing/**/*"
+    "src/testing/**/*",
+    "src/examples/memory/**/*",
+    "src/examples/filesystem/**/*",
+    "src/examples/github/**/*",
+    "src/examples/postgres/**/*",
+    "src/examples/slack/**/*"
   ]
 }

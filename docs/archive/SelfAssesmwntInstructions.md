@@ -1,4 +1,4 @@
-Got it. Here’s a drop-in replacement of the prior prompt with a **Markdown Redundancy & Cleanup** track baked in—complete lifecycle: detect → compare → decide → patch.
+RUN THIS ON LOCAL DIRECTORY USING FILESYSTEM CONNECTION: /Users/cpconnor/projects/MCP Building **Markdown Redundancy & Cleanup** track baked in—complete lifecycle: detect → compare → decide → patch.
 
 # Deep Codebase & Deployment Readiness Review — Agent Prompt (with Markdown Cleanup)
 

@@ -12,6 +12,7 @@ import { generateReadme } from './templates/readme.js';
 import { generateTsConfig } from './templates/tsconfig.js';
 import { generateTests } from './templates/tests.js';
 import { CapabilityValidator } from './validation/index.js';
+import { PostGenerationValidator } from './validators/index.js';
 
 const execAsync = promisify(exec);
 
@@ -136,9 +137,36 @@ dist/
     }
   }
 
+  // Post-generation validation
+  const validator = new PostGenerationValidator();
+  const validationResult = await validator.validateGeneratedCode(serverPath);
+
+  // Add validation warnings
+  const validationWarnings = validationResult.issues.filter((issue) => issue.severity === 'warning');
+  for (const warning of validationWarnings) {
+    const location = warning.line ? `${warning.file}:${warning.line}` : warning.file;
+    warnings.push(`${location}: ${warning.message}`);
+  }
+
+  // Check for validation errors
+  const validationErrors = validationResult.issues.filter((issue) => issue.severity === 'error');
+  if (validationErrors.length > 0) {
+    // Collect error details
+    const errorMessages = validationErrors
+      .map((error) => {
+        const location = error.line ? `${error.file}:${error.line}` : error.file;
+        return `  - ${location}: ${error.message}`;
+      })
+      .join('\n');
+
+    throw new Error(
+      `Generated code validation failed with ${validationErrors.length} error(s):\n${errorMessages}`
+    );
+  }
+
   return {
     path: serverPath,
     filesCreated,
-    warnings: warnings.length > 0 ? warnings : undefined
+    warnings: warnings.length > 0 ? warnings : undefined,
   };
 }
