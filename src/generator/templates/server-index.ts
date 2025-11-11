@@ -15,25 +15,25 @@ export function generateServerIndex(config: ServerConfig): string {
   }
 
   const imports: string[] = [
-    `import { Server } from '@modelcontextprotocol/sdk/server/index.js';`,
-    `import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';`,
+    `import { Server } from '@modelcontextprotocol/sdk/server/index';`,
+    `import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio';`,
   ];
 
   if (config.capabilities.tools) {
     imports.push(
-      `import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';`,
+      `import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types';`,
       `import { listTools, callTool } from './tools/index.js';`
     );
   }
 
   if (config.capabilities.resources) {
     imports.push(
-      `import { ListResourcesRequestSchema, ReadResourceRequestSchema } from '@modelcontextprotocol/sdk/types.js';`,
+      `import { ListResourcesRequestSchema, ReadResourceRequestSchema } from '@modelcontextprotocol/sdk/types';`,
       `import { listResources, readResource } from './resources/index.js';`
     );
     if (config.features.subscribe) {
       imports.push(
-        `import { SubscribeRequestSchema, UnsubscribeRequestSchema } from '@modelcontextprotocol/sdk/types.js';`,
+        `import { SubscribeRequestSchema, UnsubscribeRequestSchema } from '@modelcontextprotocol/sdk/types';`,
         `import { subscribeToResource, unsubscribeFromResource } from './resources/index.js';`
       );
     }
@@ -41,7 +41,7 @@ export function generateServerIndex(config: ServerConfig): string {
 
   if (config.capabilities.prompts) {
     imports.push(
-      `import { ListPromptsRequestSchema, GetPromptRequestSchema } from '@modelcontextprotocol/sdk/types.js';`,
+      `import { ListPromptsRequestSchema, GetPromptRequestSchema } from '@modelcontextprotocol/sdk/types';`,
       `import { listPrompts, getPrompt } from './prompts/index.js';`
     );
   }
@@ -131,7 +131,7 @@ async function main() {
   console.error('${config.name} MCP server running on stdio');
 }
 
-main().catch((error) => {
+main().catch((error: Error) => {
   console.error('Fatal error:', error);
   process.exit(1);
 });

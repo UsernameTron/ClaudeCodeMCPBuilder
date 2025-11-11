@@ -39,7 +39,7 @@ async function readServerInfo() {
  * - Content types: text or blob (base64)
  */
 
-import type { Resource } from '@modelcontextprotocol/sdk/types.js';
+import type { Resource } from '@modelcontextprotocol/sdk/types';
 
 ${exampleResource}
 

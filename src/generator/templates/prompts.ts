@@ -53,7 +53,7 @@ async function getAnalyzeDataPrompt(args: any) {
  * - Dynamic content generation
  */
 
-import type { Prompt } from '@modelcontextprotocol/sdk/types.js';
+import type { Prompt } from '@modelcontextprotocol/sdk/types';
 
 ${examplePrompt}
 

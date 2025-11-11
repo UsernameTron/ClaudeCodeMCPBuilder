@@ -8,4 +8,4 @@ export {
   PostGenerationValidator,
   type ValidationIssue,
   type ValidationResult,
-} from './postGenerationValidator';
+} from './postGenerationValidator.js';

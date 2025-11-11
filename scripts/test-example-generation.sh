@@ -23,7 +23,7 @@ trap cleanup EXIT
 TESTS_PASSED=0
 TESTS_FAILED=0
 
-# Function to run a test
+# Function to run a test that should succeed
 run_test() {
   local test_name="$1"
   local server_name="$2"
@@ -32,9 +32,9 @@ run_test() {
 
   echo ""
   echo "▶️  Test: $test_name"
-  echo "   Command: npm run create-server -- --name $server_name $args --output $TEST_DIR --skip-install"
+  echo "   Command: npm run create-server -- --name $server_name $args --output $TEST_DIR"
 
-  if npm run create-server -- --name "$server_name" $args --output "$TEST_DIR" --skip-install > /dev/null 2>&1; then
+  if npm run create-server -- --name "$server_name" $args --output "$TEST_DIR" > /dev/null 2>&1; then
     echo "   ✅ Generation successful"
 
     # Verify basic structure
@@ -58,6 +58,28 @@ run_test() {
   fi
 }
 
+# Function to test that invalid configs are rejected
+run_validation_test() {
+  local test_name="$1"
+  local server_name="$2"
+  shift 2
+  local args="$@"
+
+  echo ""
+  echo "▶️  Test: $test_name (should fail validation)"
+  echo "   Command: npm run create-server -- --name $server_name $args --output $TEST_DIR"
+
+  if npm run create-server -- --name "$server_name" $args --output "$TEST_DIR" > /dev/null 2>&1; then
+    echo "   ❌ Generation succeeded (should have failed)"
+    TESTS_FAILED=$((TESTS_FAILED + 1))
+    return 1
+  else
+    echo "   ✅ Validation correctly rejected invalid config"
+    TESTS_PASSED=$((TESTS_PASSED + 1))
+    return 0
+  fi
+}
+
 # Test 1: Tools server
 run_test "Tools Server" "test-tools-server" "--type tools"
 
@@ -70,8 +92,8 @@ run_test "Prompts Server" "test-prompts-server" "--type prompts"
 # Test 4: Mixed server
 run_test "Mixed Server" "test-mixed-server" "--type mixed"
 
-# Test 5: Server without examples
-run_test "Server Without Examples" "test-no-examples" "--type tools --no-examples"
+# Test 5: Validation - Server without examples should fail
+run_validation_test "Invalid Config - No Examples" "test-no-examples" "--type tools --no-examples"
 
 # Test 6: Server without tests
 run_test "Server Without Tests" "test-no-tests" "--type tools --no-tests"

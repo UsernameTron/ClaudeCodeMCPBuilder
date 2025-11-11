@@ -89,7 +89,7 @@ async function handleEcho(args: any) {
  * - Structured outputs when applicable
  */
 
-import type { Tool } from '@modelcontextprotocol/sdk/types.js';
+import type { Tool } from '@modelcontextprotocol/sdk/types';
 
 ${exampleTool}
 
