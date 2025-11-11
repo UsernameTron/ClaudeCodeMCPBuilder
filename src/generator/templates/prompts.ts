@@ -55,6 +55,8 @@ async function getAnalyzeDataPrompt(args: any) {
 
 import type { Prompt } from '@modelcontextprotocol/sdk/types.js';
 
+${examplePrompt}
+
 /**
  * List of available prompts
  * Prompts are like slash commands or workflow templates
@@ -62,7 +64,6 @@ import type { Prompt } from '@modelcontextprotocol/sdk/types.js';
 const PROMPTS: Prompt[] = [${config.includeExamples ? '\n  analyzeDataPrompt' : ''}
   // Add more prompts here
 ];
-${examplePrompt}
 
 /**
  * List prompts handler
@@ -91,8 +92,14 @@ export async function getPrompt(request: any) {
     return await getAnalyzeDataPrompt(args || {});
   }` : ''}
 
-  // Prompt not found
-  throw new Error(\`Unknown prompt: \${name}\`);
+  // Prompt not found - return error response per MCP specification
+  return {
+    isError: true,
+    content: [{
+      type: 'text',
+      text: \`Unknown prompt: \${name}. Available prompts: \${PROMPTS.map(p => p.name).join(', ') || 'none'}. Please use the prompts/list request to see all available prompts.\`
+    }]
+  };
 }
 
 /**

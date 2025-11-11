@@ -41,6 +41,8 @@ async function readServerInfo() {
 
 import type { Resource } from '@modelcontextprotocol/sdk/types.js';
 
+${exampleResource}
+
 /**
  * List of available resources
  * Resources are application-controlled: user decides which to include in context
@@ -48,7 +50,6 @@ import type { Resource } from '@modelcontextprotocol/sdk/types.js';
 const RESOURCES: Resource[] = [${config.includeExamples ? '\n  serverInfoResource' : ''}
   // Add more resources here
 ];
-${exampleResource}
 
 ${config.features.subscribe ? `
 /**
@@ -94,21 +95,70 @@ export async function readResource(request: any) {
     };
   }` : ''}
 
-  ${config.security.sanitizePaths ? `// Validate file:// URIs
+  ${config.security.sanitizePaths ? `// Validate file:// URIs with comprehensive security checks
   if (uri.startsWith('file://')) {
     const filePath = uri.substring(7); // Remove 'file://'
 
-    // Security: Prevent directory traversal
-    if (filePath.includes('..') || filePath.includes('~')) {
-      throw new Error('Invalid file path: directory traversal detected');
+    // PRODUCTION SECURITY: Use FileSystemBoundaryChecker for safe file operations
+    //
+    // import { FileSystemBoundaryChecker } from '@your-org/filesystem-utils';
+    //
+    // const fileChecker = new FileSystemBoundaryChecker(['/allowed/root/directory']);
+    //
+    // try {
+    //   // Validate path is within boundary
+    //   const safePath = fileChecker.validatePath(filePath);
+    //
+    //   // Read file safely
+    //   const content = await fileChecker.readFile(safePath);
+    //
+    //   return {
+    //     contents: [{
+    //       uri: uri,
+    //       text: content,
+    //       mimeType: 'text/plain'
+    //     }]
+    //   };
+    // } catch (error) {
+    //   return {
+    //     isError: true,
+    //     content: [{
+    //       type: 'text',
+    //       text: \`File access error: \${error.message}\`
+    //     }]
+    //   };
+    // }
+    //
+    // FileSystemBoundaryChecker provides:
+    // - Automatic root boundary enforcement
+    // - Safe file read/write/list operations
+    // - Multiple root directory support
+    // - Integration with PathSanitizer
+    //
+    // See: src/utils/filesystem/boundaryChecker.ts
+
+    // Basic validation (replace with FileSystemBoundaryChecker in production)
+    if (filePath.includes('..') || filePath.includes('~') || filePath.includes('\0')) {
+      return {
+        isError: true,
+        content: [{
+          type: 'text',
+          text: 'Invalid file path: Use FileSystemBoundaryChecker for production-ready file access.'
+        }]
+      };
     }
 
-    // TODO: Check against allowed roots
-    // TODO: Implement file reading logic
+    // TODO: Implement FileSystemBoundaryChecker and file reading logic
   }` : ''}
 
-  // Resource not found
-  throw new Error(\`Resource not found: \${uri}\`);
+  // Resource not found - return error response per MCP specification
+  return {
+    isError: true,
+    content: [{
+      type: 'text',
+      text: \`Resource not found: \${uri}. Available resources: \${RESOURCES.map(r => r.uri).join(', ') || 'none'}. Please use the resources/list request to see all available resources.\`
+    }]
+  };
 }
 
 ${config.features.subscribe ? `
@@ -122,7 +172,13 @@ export async function subscribeToResource(request: any) {
   // Verify resource exists
   const resourceExists = RESOURCES.some(r => r.uri === uri);
   if (!resourceExists) {
-    throw new Error(\`Resource not found: \${uri}\`);
+    return {
+      isError: true,
+      content: [{
+        type: 'text',
+        text: \`Cannot subscribe: Resource not found: \${uri}. Use resources/list to see available resources.\`
+      }]
+    };
   }
 
   // Track subscription (in production, use proper session management)

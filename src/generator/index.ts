@@ -11,10 +11,24 @@ import { generatePromptsModule } from './templates/prompts.js';
 import { generateReadme } from './templates/readme.js';
 import { generateTsConfig } from './templates/tsconfig.js';
 import { generateTests } from './templates/tests.js';
+import { CapabilityValidator } from './validation/index.js';
 
 const execAsync = promisify(exec);
 
 export async function generateServer(config: ServerConfig): Promise<GenerationResult> {
+  // Validate capabilities before generation
+  try {
+    CapabilityValidator.validateCapabilities(config.capabilities);
+    CapabilityValidator.validateConfiguration({
+      capabilities: config.capabilities,
+      tools: config.includeExamples ? ['echo'] : undefined,
+      resources: config.includeExamples ? ['server://info'] : undefined,
+      prompts: config.includeExamples ? ['analyze_data'] : undefined,
+    });
+  } catch (error) {
+    throw new Error(`Invalid server configuration: ${(error as Error).message}`);
+  }
+
   const serverPath = path.join(config.outputDir, config.name);
   const filesCreated: string[] = [];
   const warnings: string[] = [];

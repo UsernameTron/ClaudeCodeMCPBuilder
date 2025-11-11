@@ -4,6 +4,7 @@ import inquirer from 'inquirer';
 import chalk from 'chalk';
 import { generateServer } from '../generator/index.js';
 import type { ServerConfig } from '../generator/types.js';
+import { CapabilityValidator } from '../generator/validation/index.js';
 
 const program = new Command();
 
@@ -16,6 +17,8 @@ program
   .option('-d, --description <description>', 'Server description')
   .option('-o, --output <path>', 'Output directory', './generated-servers')
   .option('--skip-install', 'Skip npm install')
+  .option('--no-examples', 'Do not include example implementations')
+  .option('--no-tests', 'Do not generate test files')
   .action(async (options) => {
     console.log(chalk.blue.bold('\n🚀 MCP Server Generator\n'));
     console.log(chalk.gray('Based on Anthropic Model Context Protocol Specification\n'));
@@ -39,6 +42,8 @@ program
           listChanged: true,
           subscribe: options.type === 'resources' || options.type === 'mixed',
         },
+        includeExamples: options.examples !== false,  // Commander sets to false if --no-examples
+        includeTests: options.tests !== false,         // Commander sets to false if --no-tests
         security: {
           validateInputs: true,
           sanitizePaths: true,
@@ -138,6 +143,16 @@ program
         }
       };
     }
+
+    // Display configuration summary
+    const summary = CapabilityValidator.getSummary({
+      capabilities: config.capabilities,
+      tools: config.includeExamples ? ['echo'] : undefined,
+      resources: config.includeExamples ? ['server://info'] : undefined,
+      prompts: config.includeExamples ? ['analyze_data'] : undefined,
+    });
+    console.log(chalk.blue('\n📋 Server Configuration:\n'));
+    console.log(chalk.white(summary));
 
     console.log(chalk.blue('\n📦 Generating server...\n'));
 

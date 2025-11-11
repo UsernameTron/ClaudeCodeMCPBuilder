@@ -61,10 +61,19 @@ export class MCPTestClient {
       });
 
       // Create transport and client
+      const envVars = { ...process.env, ...this.config.env };
+      // Filter out undefined values to match Record<string, string> type
+      const cleanEnv: Record<string, string> = {};
+      for (const [key, value] of Object.entries(envVars)) {
+        if (value !== undefined) {
+          cleanEnv[key] = value;
+        }
+      }
+
       this.transport = new StdioClientTransport({
         command: 'node',
         args: [this.config.serverPath, ...(this.config.serverArgs || [])],
-        env: { ...process.env, ...this.config.env }
+        env: cleanEnv
       });
 
       this.client = new Client(
@@ -96,7 +105,7 @@ export class MCPTestClient {
     if (!this.client) {
       throw new Error('Client not connected');
     }
-    return await this.client.request({ method: 'tools/list' }, { timeout: this.config.timeout });
+    return await this.client.request({ method: 'tools/list' } as any);
   }
 
   /**
@@ -106,13 +115,10 @@ export class MCPTestClient {
     if (!this.client) {
       throw new Error('Client not connected');
     }
-    return await this.client.request(
-      {
-        method: 'tools/call',
-        params: { name, arguments: args }
-      },
-      { timeout: this.config.timeout }
-    );
+    return await this.client.request({
+      method: 'tools/call',
+      params: { name, arguments: args }
+    } as any);
   }
 
   /**
@@ -122,7 +128,7 @@ export class MCPTestClient {
     if (!this.client) {
       throw new Error('Client not connected');
     }
-    return await this.client.request({ method: 'resources/list' }, { timeout: this.config.timeout });
+    return await this.client.request({ method: 'resources/list' } as any);
   }
 
   /**
@@ -132,13 +138,10 @@ export class MCPTestClient {
     if (!this.client) {
       throw new Error('Client not connected');
     }
-    return await this.client.request(
-      {
-        method: 'resources/read',
-        params: { uri }
-      },
-      { timeout: this.config.timeout }
-    );
+    return await this.client.request({
+      method: 'resources/read',
+      params: { uri }
+    } as any);
   }
 
   /**
@@ -148,13 +151,10 @@ export class MCPTestClient {
     if (!this.client) {
       throw new Error('Client not connected');
     }
-    await this.client.request(
-      {
-        method: 'resources/subscribe',
-        params: { uri }
-      },
-      { timeout: this.config.timeout }
-    );
+    await this.client.request({
+      method: 'resources/subscribe',
+      params: { uri }
+    } as any);
   }
 
   /**
@@ -164,13 +164,10 @@ export class MCPTestClient {
     if (!this.client) {
       throw new Error('Client not connected');
     }
-    await this.client.request(
-      {
-        method: 'resources/unsubscribe',
-        params: { uri }
-      },
-      { timeout: this.config.timeout }
-    );
+    await this.client.request({
+      method: 'resources/unsubscribe',
+      params: { uri }
+    } as any);
   }
 
   /**
@@ -180,7 +177,7 @@ export class MCPTestClient {
     if (!this.client) {
       throw new Error('Client not connected');
     }
-    return await this.client.request({ method: 'prompts/list' }, { timeout: this.config.timeout });
+    return await this.client.request({ method: 'prompts/list' } as any);
   }
 
   /**
@@ -190,13 +187,10 @@ export class MCPTestClient {
     if (!this.client) {
       throw new Error('Client not connected');
     }
-    return await this.client.request(
-      {
-        method: 'prompts/get',
-        params: { name, arguments: args }
-      },
-      { timeout: this.config.timeout }
-    );
+    return await this.client.request({
+      method: 'prompts/get',
+      params: { name, arguments: args }
+    } as any);
   }
 
   /**
@@ -206,13 +200,10 @@ export class MCPTestClient {
     if (!this.client) {
       throw new Error('Client not connected');
     }
-    await this.client.request(
-      {
-        method: 'notifications/roots/list_changed',
-        params: { roots }
-      },
-      { timeout: this.config.timeout }
-    );
+    await this.client.request({
+      method: 'notifications/roots/list_changed',
+      params: { roots }
+    } as any);
   }
 
   /**
