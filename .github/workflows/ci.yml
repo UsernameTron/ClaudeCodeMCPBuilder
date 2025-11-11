@@ -23,11 +23,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'npm'
 
       - name: Clean install (fix rollup optional deps)
         run: |
-          rm -rf node_modules
+          rm -rf node_modules package-lock.json
           npm install
 
       - name: Run linter
@@ -60,7 +59,7 @@ jobs:
 
       - name: Clean install (fix rollup optional deps)
         run: |
-          rm -rf node_modules
+          rm -rf node_modules package-lock.json
           npm install
 
       - name: Run security audit
@@ -82,11 +81,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
-          cache: 'npm'
 
       - name: Clean install (fix rollup optional deps)
         run: |
-          rm -rf node_modules
+          rm -rf node_modules package-lock.json
           npm install
 
       - name: Run tests with coverage
