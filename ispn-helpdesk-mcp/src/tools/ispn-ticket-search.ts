@@ -16,7 +16,7 @@ const inputSchema = z.object({
 
 export const ticketSearchTool = {
   definition: {
-    name: 'ispn.ticket.search',
+    name: 'ispn_ticket_search',
     description: 'Search tickets by date range across all customers. Returns tickets created between begin and end dates.',
     inputSchema: {
       type: 'object',

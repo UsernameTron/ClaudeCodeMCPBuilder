@@ -1,0 +1,45 @@
+🚀 Starting MCP server test...
+
+📤 Sent: initialize
+📥 Received (id: 1): {
+  "result": {
+    "protocolVersion": "2025-06-18",
+    "capabilities": {
+      "tools": {}
+    },
+    "serverInfo": {
+      "name": "ispn-helpdesk-bridge",
+      "version": "1.0.0"
+    }
+  },
+  "jsonrpc": "2.0",
+  "id": 1
+}...
+📤 Sent: notifications/initialized
+📥 Received (id: 2): {
+  "jsonrpc": "2.0",
+  "id": 2,
+  "error": {
+    "code": -32601,
+    "message": "Method not found"
+  }
+}...
+📤 Sent: tools/list
+📥 Received (id: 3): {
+  "result": {
+    "tools": [
+      {
+        "name": "ispn.customer.lookup",
+        "description": "Look up customer by billing ID, phone number, or email address. Returns customer information from ISPN Helpdesk.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "billid": {
+              "type": "string",
+              "description": "Internal Billing ID (e.g., \"999\")"
+            },
+            "phone": {
+              "type": "string",
+          ...
+
+✅ Tool call response received!

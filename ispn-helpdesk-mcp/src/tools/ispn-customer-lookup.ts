@@ -21,7 +21,7 @@ const inputSchema = z.object({
 
 export const customerLookupTool = {
   definition: {
-    name: 'ispn.customer.lookup',
+    name: 'ispn_customer_lookup',
     description: 'Look up customer by billing ID, phone number, or email address. Returns customer information from ISPN Helpdesk.',
     inputSchema: {
       type: 'object',

@@ -371,10 +371,14 @@ export class ISPNClient {
   async listEscalationsByDateRange(
     begin: string,
     end: string,
-    status: '0' | '1', // 0 = closed, 1 = open
+    status?: '0' | '1', // 0 = closed, 1 = open, undefined = both
     hour?: boolean
   ): Promise<EscalationInfo[]> {
-    const params: Record<string, string> = { begin, end, status };
+    const params: Record<string, string> = { begin, end };
+
+    if (status) {
+      params.status = status;
+    }
 
     if (hour) {
       params.hour = '1';

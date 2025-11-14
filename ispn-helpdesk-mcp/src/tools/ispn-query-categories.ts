@@ -14,7 +14,7 @@ const inputSchema = z.object({
 
 export const queryCategoryTool = {
   definition: {
-    name: 'ispn.query.list_categories',
+    name: 'ispn_query_list_categories',
     description: 'List all available ticket categories and services from ISPN Helpdesk. Returns category IDs and names for ticket creation.',
     inputSchema: {
       type: 'object',

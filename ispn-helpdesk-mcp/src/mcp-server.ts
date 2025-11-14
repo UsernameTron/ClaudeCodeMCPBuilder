@@ -37,6 +37,13 @@ import { dhcpListTool } from './tools/ispn-dhcp-list.js';
 import { queryCategoryTool } from './tools/ispn-query-categories.js';
 import { accountCheckTool } from './tools/ispn-account-check.js';
 
+// Import ISPN analytics tools
+import { ticketVolumeAnalyticsTool } from './tools/ispn-analytics-ticket-volume.js';
+import { escalationMetricsAnalyticsTool } from './tools/ispn-analytics-escalation-metrics.js';
+import { serviceHealthAnalyticsTool } from './tools/ispn-analytics-service-health.js';
+import { timePatternsAnalyticsTool } from './tools/ispn-analytics-time-patterns.js';
+import { customerPatternsAnalyticsTool } from './tools/ispn-analytics-customer-patterns.js';
+
 /**
  * MCP Server Instance
  *
@@ -84,6 +91,13 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       // Verification & metadata tools
       queryCategoryTool.definition,
       accountCheckTool.definition,
+
+      // Analytics tools
+      ticketVolumeAnalyticsTool.definition,
+      escalationMetricsAnalyticsTool.definition,
+      serviceHealthAnalyticsTool.definition,
+      timePatternsAnalyticsTool.definition,
+      customerPatternsAnalyticsTool.definition,
     ],
   };
 });
@@ -106,35 +120,51 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   try {
     switch (name) {
       // Customer query tools
-      case 'ispn.customer.lookup':
+      case 'ispn_customer_lookup':
         return await customerLookupTool.handler(args);
 
-      case 'ispn.customer.get_details':
+      case 'ispn_customer_get_details':
         return await customerDetailsTool.handler(args);
 
-      case 'ispn.customer.list_tickets':
+      case 'ispn_customer_list_tickets':
         return await customerTicketsTool.handler(args);
 
       // Ticket query tools
-      case 'ispn.ticket.search':
+      case 'ispn_ticket_search':
         return await ticketSearchTool.handler(args);
 
-      case 'ispn.escalation.list':
+      case 'ispn_escalation_list':
         return await escalationListTool.handler(args);
 
-      case 'ispn.escalation.get':
+      case 'ispn_escalation_get':
         return await escalationGetTool.handler(args);
 
       // Network query tools
-      case 'ispn.dhcp.list':
+      case 'ispn_dhcp_list':
         return await dhcpListTool.handler(args);
 
       // Verification & metadata tools
-      case 'ispn.query.list_categories':
+      case 'ispn_query_list_categories':
         return await queryCategoryTool.handler(args);
 
-      case 'ispn.account.check':
+      case 'ispn_account_check':
         return await accountCheckTool.handler(args);
+
+      // Analytics tools
+      case 'ispn_analytics_ticket_volume':
+        return await ticketVolumeAnalyticsTool.handler(args);
+
+      case 'ispn_analytics_escalation_metrics':
+        return await escalationMetricsAnalyticsTool.handler(args);
+
+      case 'ispn_analytics_service_health':
+        return await serviceHealthAnalyticsTool.handler(args);
+
+      case 'ispn_analytics_time_patterns':
+        return await timePatternsAnalyticsTool.handler(args);
+
+      case 'ispn_analytics_customer_patterns':
+        return await customerPatternsAnalyticsTool.handler(args);
 
       default:
         const error = new Error(`Unknown tool: ${name}`);

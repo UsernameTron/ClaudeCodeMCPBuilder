@@ -14,7 +14,7 @@ const inputSchema = z.object({
 
 export const customerDetailsTool = {
   definition: {
-    name: 'ispn.customer.get_details',
+    name: 'ispn_customer_get_details',
     description: 'Get full customer details including contact info, phones, and account information from ISPN Helpdesk. Requires billing ID.',
     inputSchema: {
       type: 'object',

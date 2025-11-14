@@ -18,7 +18,7 @@ const inputSchema = z.object({
 
 export const accountCheckTool = {
   definition: {
-    name: 'ispn.account.check',
+    name: 'ispn_account_check',
     description: 'Check if a username or email address exists in ISPN Helpdesk. Returns existence status and account type.',
     inputSchema: {
       type: 'object',

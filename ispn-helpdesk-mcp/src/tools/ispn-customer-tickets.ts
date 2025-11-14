@@ -16,7 +16,7 @@ const inputSchema = z.object({
 
 export const customerTicketsTool = {
   definition: {
-    name: 'ispn.customer.list_tickets',
+    name: 'ispn_customer_list_tickets',
     description: 'List all tickets associated with a customer. Returns ticket history from ISPN Helpdesk.',
     inputSchema: {
       type: 'object',

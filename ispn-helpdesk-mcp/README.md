@@ -1,82 +1,88 @@
-# ISPN Helpdesk Bridge MCP Server
+# ISPN Helpdesk MCP Server
 
-Production-ready MCP server for seamless ElevenLabs agent handoffs to helpdesk tickets with intelligent deduplication and comprehensive error handling.
+**Read-only query interface for ISPN Helpdesk with advanced analytics**
+
+A Model Context Protocol (MCP) server providing natural language query access to ISPN Helpdesk data through Claude Desktop. Features 14 tools for customer lookup, ticket search, escalation tracking, network diagnostics, and operational analytics.
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue.svg)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
-[![License](https://img.shields.io/badge/license-ISC-blue.svg)](LICENSE)
+[![MCP](https://img.shields.io/badge/MCP-1.0-purple.svg)](https://modelcontextprotocol.io/)
 
 ---
 
-## Overview
+## What This Does
 
-The ISPN Helpdesk Bridge MCP Server provides two independent server processes:
+Ask Claude Desktop questions about your ISPN Helpdesk in natural language:
 
-1. **HTTP API Server** - Webhook endpoints for ElevenLabs agent handoffs
-2. **MCP Server** - Model Context Protocol tools for Claude Desktop integration
-
-Both servers share core services (ticket deduplication, helpdesk integration, validation) while operating independently.
-
----
-
-## Architecture
-
+**Customer Support:**
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    ISPN Helpdesk Bridge                      │
-├─────────────────────────────────────────────────────────────┤
-│                                                               │
-│  ┌─────────────────┐         ┌──────────────────┐          │
-│  │  HTTP API       │         │  MCP Server      │          │
-│  │  Server         │         │  (stdio)         │          │
-│  │  (Port 3000)    │         │                  │          │
-│  └────────┬────────┘         └────────┬─────────┘          │
-│           │                           │                      │
-│           └───────────┬───────────────┘                      │
-│                       │                                      │
-│           ┌───────────▼───────────┐                         │
-│           │   Shared Services     │                         │
-│           ├───────────────────────┤                         │
-│           │ • Ticket Store (TTL)  │                         │
-│           │ • Idempotency Store   │                         │
-│           │ • Helpdesk Client     │                         │
-│           │ • Note Processor      │                         │
-│           │ • Validators          │                         │
-│           └───────────┬───────────┘                         │
-│                       │                                      │
-│           ┌───────────▼───────────┐                         │
-│           │  Helpdesk System API  │                         │
-│           └───────────────────────┘                         │
-└─────────────────────────────────────────────────────────────┘
+"Look up customer with phone 555-123-4567"
+"Show me all tickets for customer 999"
+"What's the status of escalation 12345?"
+```
+
+**Daily Operations:**
+```
+"Good morning, how are we doing?"
+"Show me open escalations from today"
+"Which services need attention this week?"
+```
+
+**Analytics & Planning:**
+```
+"What's our ticket volume trend for the last month?"
+"When are our peak times and how should I staff?"
+"Which customers need proactive outreach?"
+```
+
+**Network Diagnostics:**
+```
+"What IP does customer 999 have?"
+"Check DHCP pool Pool_A utilization"
 ```
 
 ---
 
 ## Features
 
-### HTTP API Server
-- ✅ **Dual Authentication** - Shared token + HMAC signature validation
-- ✅ **Rate Limiting** - 10 requests/second per client
-- ✅ **Idempotency** - Duplicate request detection (15-minute window)
-- ✅ **Replay Protection** - 5-minute timestamp window + signature deduplication
-- ✅ **Health Endpoints** - Liveness (`/healthz`) and readiness (`/readyz`) probes
-- ✅ **Structured Logging** - Pino with PII redaction
-- ✅ **Graceful Shutdown** - Clean resource cleanup
+### 14 MCP Tools
 
-### MCP Server
-- ✅ **5 MCP Tools** - Complete helpdesk integration for Claude Desktop
-- ✅ **Stdio Transport** - Standard MCP protocol implementation
-- ✅ **Tool Definitions** - Zod schema validation for all tools
-- ✅ **Error Handling** - Structured error responses
-- ✅ **Request Logging** - Detailed tool execution logs
+**Customer Tools (3):**
+- Customer lookup by ID/phone/email
+- Get full customer details
+- List customer ticket history
 
-### Core Services
-- ✅ **Ticket Deduplication** - Find existing tickets by oaKey or caller+category
-- ✅ **4-Hour TTL Cache** - Automatic ticket cache expiration
-- ✅ **Note Rendering** - 4-line formatted note generation
-- ✅ **Input Validation** - Zod schemas with TypeScript type inference
-- ✅ **E.164 Phone Validation** - libphonenumber-js integration
-- ✅ **Category/Reason Inference** - Automatic classification from notes
+**Ticket Tools (3):**
+- Search tickets by date range
+- List escalations (open/closed)
+- Get escalation details
+
+**Network Tools (1):**
+- List DHCP reservations
+
+**Verification Tools (2):**
+- List categories and services
+- Check account existence
+
+**Analytics Tools (5):**
+- Ticket volume analysis with trends
+- Escalation performance metrics
+- Service health dashboard
+- Time pattern analysis (staffing optimization)
+- Customer pattern detection (proactive support)
+
+See [AVAILABLE_QUERIES.md](AVAILABLE_QUERIES.md) for complete query reference.
+
+### Architecture
+
+- **Read-Only:** No write operations to helpdesk
+- **Stdio Transport:** Standard MCP protocol
+- **Type-Safe:** Zod schema validation for all inputs
+- **Structured Logging:** Pino with stderr output
+- **Error Handling:** Graceful failures with detailed messages
+- **Analytics Engine:** Statistical analysis and trend detection
+
+See [DESIGN.md](DESIGN.md) for technical architecture.
 
 ---
 
@@ -86,250 +92,129 @@ Both servers share core services (ticket deduplication, helpdesk integration, va
 
 - Node.js >= 18.0.0
 - npm >= 9.0.0
+- Claude Desktop app
 
 ### Installation
 
+**1. Clone and install:**
 ```bash
-# Clone repository
-git clone https://github.com/yourorg/ispn-helpdesk-mcp.git
+git clone <repo-url>
 cd ispn-helpdesk-mcp
-
-# Install dependencies
 npm install
-
-# Configure environment
-cp .env.example .env
-nano .env  # Update with your configuration
 ```
 
-### Configuration
-
-**Required Environment Variables:**
-
+**2. Build:**
 ```bash
-# Authentication
-AUTH_TOKEN=your-secret-token-here          # Generate with: openssl rand -hex 32
-WEBHOOK_SECRET=your-webhook-secret-here    # Generate with: openssl rand -hex 32
-
-# Helpdesk API
-HELPDESK_API_URL=https://helpdesk.example.com/api/v1
-HELPDESK_API_KEY=your-helpdesk-api-key-here
-```
-
-See [.env.example](.env.example) for all configuration options.
-
-### Development
-
-```bash
-# Start HTTP API server (development mode)
-npm run dev:http
-
-# Start MCP server (development mode)
-npm run dev:mcp
-
-# Start both servers
-npm run dev
-
-# Run tests
-npm test
-
-# Run tests with UI
-npm run test:ui
-
-# Type check
-npm run type-check
-```
-
-### Production
-
-```bash
-# Build for production
 npm run build
-
-# Start HTTP API server
-npm run start:http
-
-# Start MCP server
-npm run start:mcp
 ```
 
-See [Deployment Guide](docs/DEPLOYMENT.md) for production deployment instructions.
+**3. Configure Claude Desktop:**
 
----
+Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS):
 
-## API Documentation
-
-### HTTP Endpoints
-
-#### Health Checks
-
-**Liveness Probe:**
-```http
-GET /healthz
-```
-
-**Readiness Probe:**
-```http
-GET /readyz
-```
-
-#### OA Handoff
-
-**Create or find ticket:**
-```http
-POST /ingest/oa-handoff
-Content-Type: application/json
-x-auth-token: your-token
-
-{
-  "note": "Category: WiFi\nReason: CallerRequested\nSummary: Customer unable to connect\nConfidence: 0.85",
-  "category": "WiFi",
-  "escalationReason": "CallerRequested",
-  "confidence": "0.85",
-  "callerNumber": "+12345678900",
-  "oaKey": "oa-12345",
-  "source": "OutageAgent"
-}
-```
-
-**Response:**
 ```json
 {
-  "status": "ok",
-  "created": true,
-  "ticketId": "TKT-1000",
-  "ticketUrl": "https://helpdesk.example.com/tickets/1000",
-  "category": "WiFi",
-  "escalationReason": "CallerRequested",
-  "confidence": "0.85",
-  "echo": {
-    "oaKey": "oa-12345",
-    "callerNumber": "+12345678900"
+  "mcpServers": {
+    "ispn-helpdesk": {
+      "command": "node",
+      "args": ["/absolute/path/to/ispn-helpdesk-mcp/dist/mcp-server.js"],
+      "env": {
+        "ISPN_API_URL": "https://api.helpdesk.ispn.net/exec.pl",
+        "ISPN_AUTH_CODE": "your-auth-code-here"
+      }
+    }
   }
 }
 ```
 
-See [OpenAPI Specification](docs/openapi.yaml) for complete API documentation.
+**4. Restart Claude Desktop**
+
+That's it! The MCP server will start automatically when Claude Desktop launches.
 
 ---
 
-## MCP Tools Reference
+## Configuration
 
-### 1. helpdesk.create_ticket
+### Environment Variables
 
-Create a new helpdesk ticket (bypasses deduplication).
+Set in Claude Desktop config or `.env` file:
 
-**Input:**
-- `description` (required): Ticket description (10-1000 chars)
-- `category` (required): Outage, WiFi, CGNAT, Wiring, EquipmentReturn, Unknown
-- `escalationReason` (required): CallerRequested, TwoStepsNoResolve, OutOfScope, SafetyRisk, BillingOrAccount, Other
-- `callerNumber` (optional): E.164 phone number
-- `source` (optional): ATOM, OutageAgent, Other
-- `metadata` (optional): Additional metadata object
+```bash
+# Required
+ISPN_API_URL=https://api.helpdesk.ispn.net/exec.pl
+ISPN_AUTH_CODE=your-auth-code-here
 
-**Output:**
-```json
-{
-  "success": true,
-  "ticketId": "TKT-1000",
-  "ticketUrl": "https://helpdesk.example.com/tickets/1000",
-  "category": "WiFi",
-  "escalationReason": "TwoStepsNoResolve"
-}
+# Optional (defaults shown)
+NODE_ENV=production
+LOG_LEVEL=info
 ```
 
-### 2. helpdesk.append_note
+### Getting Your Auth Code
 
-Append a note to an existing helpdesk ticket.
+Contact your ISPN administrator to obtain an API authentication code.
 
-**Input:**
-- `ticketId` (required): Ticket ID
-- `note` (required): Note content (10-1000 chars)
-- `author` (optional): Note author (defaults to "ISPN-Agent")
+---
 
-**Output:**
-```json
-{
-  "success": true,
-  "message": "Note appended successfully",
-  "ticketId": "TKT-1000"
-}
+## Usage Examples
+
+### Morning Standup
+
+```
+User: "Good morning, how are we doing?"
+
+Claude: (Uses ispn_analytics_service_health)
+
+📊 Service Health Dashboard - Nov 14, 2025 8:00 AM
+
+OVERALL: ⚠️ NEEDS ATTENTION (Score: 68)
+
+Services:
+✅ Email (92) - 15 tickets, 1 escalation, 3.2hr avg resolution
+✅ VoIP (88) - 8 tickets, 0 escalations
+⚠️ Internet (65) - 28 tickets ↑, 4 escalations, 14.5hr avg
+🔴 DHCP (42) - CRITICAL: 12 tickets, 8 escalations
+
+Top Issues:
+1. URGENT: DHCP Pool_A expansion needed
+2. Internet escalations up 60% vs last week
+
+Staffing: Recommend 8 techs for peak (10am-2pm)
 ```
 
-### 3. helpdesk.find_or_create_ticket
+### Customer Support
 
-Find existing ticket or create new one (with deduplication).
+```
+User: "Look up customer with phone 555-123-4567"
 
-**Input:**
-- `description` (required): Ticket description (10-1000 chars)
-- `category` (required): Ticket category
-- `escalationReason` (required): Escalation reason
-- `callerNumber` (optional): E.164 phone number (used for deduplication)
-- `oaKey` (optional): Outage Agent key (used for deduplication)
-- `source` (optional): Source system
-
-**Output:**
-```json
-{
-  "success": true,
-  "created": false,
-  "ticketId": "TKT-1000",
-  "ticketUrl": "https://helpdesk.example.com/tickets/1000",
-  "message": "Existing ticket found (deduplication)"
-}
+Claude: (Uses ispn_customer_lookup)
+Found customer:
+- Billing ID: 999
+- Name: John Smith
+- Email: jsmith@example.com
+- Service: Fiber 1000
 ```
 
-### 4. ingest.render_note
+### Performance Review
 
-Render a 4-line formatted note from components.
-
-**Input:**
-- `category` (required): Category value
-- `escalationReason` (required): Escalation reason value
-- `summary` (required): Summary text (10-250 chars)
-- `confidence` (required): Confidence score (0.0-1.0)
-
-**Output:**
-```json
-{
-  "success": true,
-  "note": "Category: WiFi\nReason: TwoStepsNoResolve\nSummary: Test\nConfidence: 0.85",
-  "charCount": 85,
-  "lineCount": 4
-}
 ```
+User: "Show me ticket volume trends for the last month"
 
-### 5. ingest.oa_handoff
+Claude: (Uses ispn_analytics_ticket_volume)
 
-Complete OA handoff workflow (render note + find/create ticket).
+📈 Ticket Volume Analysis - Last 30 Days
 
-**Input:**
-- `note` (required): 4-line formatted note (≤350 chars)
-- `category` (optional): Auto-inferred if missing
-- `escalationReason` (optional): Auto-inferred if missing
-- `confidence` (optional): Defaults to "0.0"
-- `callerNumber` (optional): E.164 phone number
-- `oaKey` (optional): Outage Agent key
-- `source` (optional): Defaults to "OutageAgent"
+Total: 1,247 tickets (+12% vs previous month) ↑
+Daily Average: 41.6 tickets
+Trend: INCREASING
 
-**Output:**
-```json
-{
-  "success": true,
-  "created": true,
-  "ticketId": "TKT-1003",
-  "ticketUrl": "https://helpdesk.example.com/tickets/1003",
-  "category": "WiFi",
-  "escalationReason": "TwoStepsNoResolve",
-  "confidence": "0.85",
-  "echo": {
-    "oaKey": "oa-12345",
-    "callerNumber": "+12345678900"
-  }
-}
+By Service:
+- Internet: 456 tickets (36.6%) - trending UP
+- Email: 312 tickets (25.0%) - stable
+- VoIP: 289 tickets (23.2%) - trending DOWN
+- Other: 190 tickets (15.2%)
+
+Recommendation: Monitor Internet trend - investigate root cause
 ```
-
-See [Integration Guide](docs/INTEGRATION.md) for setup instructions.
 
 ---
 
@@ -340,213 +225,168 @@ See [Integration Guide](docs/INTEGRATION.md) for setup instructions.
 ```
 ispn-helpdesk-mcp/
 ├── src/
-│   ├── errors/           # Custom error classes
-│   ├── middleware/       # Express middleware (auth, rate-limit, idempotency)
-│   ├── routes/           # HTTP route handlers
-│   ├── schemas/          # Zod validation schemas
-│   ├── services/         # Core services (ticket-store, helpdesk-client, etc.)
-│   ├── tools/            # MCP tool implementations
-│   ├── types/            # TypeScript type definitions
-│   ├── utils/            # Utility functions
-│   ├── http-server.ts    # HTTP API server entry point
-│   └── mcp-server.ts     # MCP server entry point
-├── tests/
-│   └── unit/             # Unit tests (96 tests, 100% passing)
-├── docs/
-│   ├── openapi.yaml      # OpenAPI 3.0 specification
-│   ├── DEPLOYMENT.md     # Deployment guide
-│   └── INTEGRATION.md    # Integration guide
-├── dist/                 # Compiled JavaScript (generated)
-├── .env.example          # Environment template
-├── package.json          # NPM configuration
-├── tsconfig.json         # TypeScript configuration
-└── README.md             # This file
+│   ├── services/          # ISPN API client, category mapper
+│   ├── tools/             # 14 MCP tool implementations
+│   ├── utils/             # Analytics helpers, logging, phone normalization
+│   ├── mcp-server.ts      # MCP server entry point
+│   └── types.d.ts         # TypeScript definitions
+├── dist/                  # Compiled JavaScript (generated by build)
+├── archive/               # Historical documentation
+├── package.json
+├── tsconfig.json
+├── README.md              # This file
+├── AVAILABLE_QUERIES.md   # Complete query reference
+└── DESIGN.md              # Architecture and design
 ```
 
-### Technology Stack
+### Development Commands
 
-- **Runtime:** Node.js 18+
-- **Language:** TypeScript 5.9
-- **HTTP Framework:** Express 5.1
-- **MCP SDK:** @modelcontextprotocol/sdk 1.21
-- **Validation:** Zod 3.25
-- **Logging:** Pino 10.1
-- **Testing:** Vitest 4.0
-- **Phone Validation:** libphonenumber-js 1.12
+```bash
+# Install dependencies
+npm install
+
+# Build TypeScript
+npm run build
+
+# Watch mode (rebuild on changes)
+npm run watch
+
+# Type check
+npm run type-check
+
+# Clean build artifacts
+npm run clean
+```
 
 ### Testing
 
 ```bash
-# Run all tests
-npm test
+# Manual testing with MCP inspector
+npx @modelcontextprotocol/inspector node dist/mcp-server.js
 
-# Run with coverage
-npm run test:coverage
-
-# Run tests with UI
-npm run test:ui
-
-# Run specific test file
-npm test tests/unit/mcp-tools.test.ts
+# Test individual tool
+# (Use Claude Desktop or MCP inspector)
 ```
-
-**Test Coverage:**
-- 96 unit tests
-- 100% passing
-- Key areas: Tools (21 tests), Services (13 tests), Validators (20 tests), Note Processor (22 tests)
-
-### Code Quality
-
-```bash
-# Type check
-npm run type-check
-
-# Lint (if configured)
-npm run lint
-
-# Build
-npm run build
-
-# Clean
-npm run clean
-```
-
----
-
-## Deployment
-
-### Quick Deploy (PM2)
-
-```bash
-# Build
-npm run build
-
-# Install PM2
-npm install -g pm2
-
-# Start services
-pm2 start ecosystem.config.js
-
-# Save configuration
-pm2 save
-
-# Setup startup script
-pm2 startup
-```
-
-### Docker (TODO)
-
-```dockerfile
-# Dockerfile (future enhancement)
-FROM node:20-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --production
-COPY dist ./dist
-COPY .env.production ./.env
-CMD ["node", "dist/http-server.js"]
-```
-
-See [Deployment Guide](docs/DEPLOYMENT.md) for complete deployment instructions including:
-- Environment setup
-- Process management (PM2, systemd)
-- Reverse proxy (nginx)
-- SSL/TLS configuration
-- Monitoring and logging
-- Scaling strategies
 
 ---
 
 ## Troubleshooting
 
-### Common Issues
+### MCP Server Not Starting
 
-**Issue:** Authentication fails
-- Verify `AUTH_TOKEN` in `.env` matches request header
-- Check token is not quoted in `.env` file
-- Ensure `.env` file is loaded (run `npm run dev:http` from project root)
+**Check logs:**
+```bash
+tail -f ~/Library/Logs/Claude/mcp-server-ispn-helpdesk.log
+```
 
-**Issue:** MCP tools not showing in Claude Desktop
-- Verify config path: `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
-- Check absolute path in config points to `dist/mcp-server.js`
-- Ensure `npm run build` completed successfully
-- Restart Claude Desktop completely
+**Common issues:**
+- Missing `ISPN_API_URL` or `ISPN_AUTH_CODE` in config
+- Incorrect absolute path in Claude Desktop config
+- Build failed (`npm run build` not executed)
+- Node.js version < 18
 
-**Issue:** Rate limit errors
-- Default: 10 requests/second per client
-- Configure `RATE_LIMIT_MAX` and `RATE_LIMIT_WINDOW_MS` in `.env`
-- Implement retry logic with exponential backoff
+### Tools Not Appearing
 
-See [Integration Guide - Troubleshooting](docs/INTEGRATION.md#troubleshooting) for more solutions.
+**Verify configuration:**
+1. Restart Claude Desktop completely (Quit and reopen)
+2. Check config path: `~/Library/Application Support/Claude/claude_desktop_config.json`
+3. Ensure path points to `dist/mcp-server.js` (not `src/`)
+4. Run `npm run build` again
 
----
+### API Connection Errors
 
-## Contributing
+**Check authentication:**
+- Verify `ISPN_AUTH_CODE` is correct
+- Test API manually:
+  ```bash
+  curl "https://api.helpdesk.ispn.net/exec.pl?auth=YOUR_CODE&cmd=listsupportsvc"
+  ```
+- Check network connectivity to ISPN API
 
-### Development Workflow
+### Slow Queries
 
-1. **Fork** the repository
-2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
-3. **Make** your changes
-4. **Test** your changes (`npm test`)
-5. **Commit** your changes (`git commit -m 'Add amazing feature'`)
-6. **Push** to the branch (`git push origin feature/amazing-feature`)
-7. **Open** a Pull Request
-
-### Code Style
-
-- Use TypeScript strict mode
-- Follow existing code formatting
-- Add tests for new features
-- Update documentation as needed
-- Use conventional commit messages
+**Analytics tools process large datasets:**
+- 7-30 day ranges: 2-5 seconds
+- 90+ day ranges: 5-10 seconds
+- Consider smaller date ranges for faster results
+- Future enhancement: Add caching layer
 
 ---
 
-## License
+## API Reference
 
-ISC License
+See [AVAILABLE_QUERIES.md](AVAILABLE_QUERIES.md) for:
+- Complete list of 14 tools
+- Parameter documentation
+- Example queries
+- Use case guides
 
-Copyright (c) 2025
+See [DESIGN.md](DESIGN.md) for:
+- Technical architecture
+- Data flow diagrams
+- Implementation details
 
-Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted, provided that the above copyright notice and this permission notice appear in all copies.
+---
 
-THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+## What's Not Included
+
+This is a **read-only query interface**. It does not:
+- ❌ Create or modify tickets
+- ❌ Update customer information
+- ❌ Change escalation status
+- ❌ Modify DHCP reservations
+- ❌ Track individual agent performance (ISPN doesn't store this)
+
+For write operations, use the ISPN Helpdesk interface directly.
+
+---
+
+## Technology Stack
+
+- **Runtime:** Node.js 18+
+- **Language:** TypeScript 5.9
+- **MCP SDK:** @modelcontextprotocol/sdk 1.0+
+- **Validation:** Zod 3.25
+- **Logging:** Pino 10.1
+- **HTTP Client:** Axios 1.8
+- **XML Parsing:** fast-xml-parser 5.0
 
 ---
 
 ## Support
 
-- **Documentation:** [docs/](docs/)
-- **Issues:** https://github.com/yourorg/ispn-helpdesk-mcp/issues
-- **Email:** support@example.com
+**Documentation:**
+- [README.md](README.md) - This file
+- [AVAILABLE_QUERIES.md](AVAILABLE_QUERIES.md) - Query reference
+- [DESIGN.md](DESIGN.md) - Technical documentation
+- [archive/](archive/) - Historical implementation docs
+
+**Logs:**
+- macOS: `~/Library/Logs/Claude/mcp-server-ispn-helpdesk.log`
+- Windows: `%APPDATA%\Claude\logs\mcp-server-ispn-helpdesk.log`
+
+**Issues:**
+- Check logs first
+- Verify configuration
+- Test API connectivity
 
 ---
 
-## Roadmap
+## Version History
 
-### Completed (v1.0.0)
-- ✅ HTTP API server with webhooks
-- ✅ MCP server with 5 tools
-- ✅ Ticket deduplication
-- ✅ Dual authentication (token + HMAC)
-- ✅ Rate limiting and idempotency
-- ✅ Comprehensive documentation
-
-### Planned (v1.1.0)
-- ⏳ Redis support for multi-instance deployments
-- ⏳ Prometheus metrics endpoint
-- ⏳ Docker and Kubernetes manifests
-- ⏳ Real helpdesk client implementations (Zendesk, Freshdesk, etc.)
-- ⏳ GraphQL API (optional)
-- ⏳ WebSocket support for real-time updates
-
-### Planned (v2.0.0)
-- ⏳ Admin dashboard
-- ⏳ Ticket analytics and reporting
-- ⏳ Multi-tenant support
-- ⏳ Advanced ML-based categorization
+**v1.0.0** (2025-11-14)
+- Initial release
+- 9 read-only query tools
+- 5 analytics tools
+- Full Claude Desktop integration
+- Comprehensive documentation
 
 ---
 
-**Built with ❤️ for seamless agent-to-human handoffs**
+## License
+
+ISC License - See LICENSE file for details
+
+---
+
+**Transform your ISPN Helpdesk data into actionable insights with natural language queries.**

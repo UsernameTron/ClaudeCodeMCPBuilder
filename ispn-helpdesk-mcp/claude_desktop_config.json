@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "ispn-helpdesk": {
+      "command": "node",
+      "args": [
+        "/Users/cpconnor/projects/MCP Building/ispn-helpdesk-mcp/dist/mcp-server.js"
+      ],
+      "env": {
+        "ISPN_API_URL": "https://api.helpdesk.ispn.net/exec.pl",
+        "ISPN_AUTH_CODE": "697cecca59efe086653ae1c4194497f43d231f01",
+        "LOG_LEVEL": "info"
+      }
+    }
+  }
+}

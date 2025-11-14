@@ -18,7 +18,7 @@ const inputSchema = z.object({
 
 export const dhcpListTool = {
   definition: {
-    name: 'ispn.dhcp.list',
+    name: 'ispn_dhcp_list',
     description: 'List DHCP reservations. Can filter by customer, pool, status, or IP address. Used for network diagnostics and IP management.',
     inputSchema: {
       type: 'object',

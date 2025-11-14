@@ -14,7 +14,7 @@ const inputSchema = z.object({
 
 export const escalationGetTool = {
   definition: {
-    name: 'ispn.escalation.get',
+    name: 'ispn_escalation_get',
     description: 'Get detailed information about a specific escalation by escalation ID.',
     inputSchema: {
       type: 'object',

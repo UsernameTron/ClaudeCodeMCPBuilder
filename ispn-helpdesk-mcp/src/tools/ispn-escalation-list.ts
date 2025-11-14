@@ -17,7 +17,7 @@ const inputSchema = z.object({
 
 export const escalationListTool = {
   definition: {
-    name: 'ispn.escalation.list',
+    name: 'ispn_escalation_list',
     description: 'List escalations by date range and status. Returns open or closed escalations between begin and end dates.',
     inputSchema: {
       type: 'object',
