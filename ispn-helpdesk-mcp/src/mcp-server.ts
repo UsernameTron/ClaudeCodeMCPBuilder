@@ -4,11 +4,11 @@
  * MCP Server - ISPN Helpdesk Bridge
  *
  * Model Context Protocol server for Claude Desktop integration.
- * Separate process from HTTP server (runs independently).
+ * Provides read-only query access to ISPN Helpdesk API.
  *
  * Features:
  * - Stdio transport for Claude Desktop
- * - 5 MCP tools registered
+ * - 10 read-only query tools
  * - Request logging
  * - Error handling
  * - Graceful shutdown
@@ -26,12 +26,16 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { logger } from './utils/logger.js';
 
-// Import tool handlers
-import { createTicketTool } from './tools/helpdesk-create-ticket.js';
-import { appendNoteTool } from './tools/helpdesk-append-note.js';
-import { findOrCreateTicketTool } from './tools/helpdesk-find-or-create-ticket.js';
-import { renderNoteTool } from './tools/ingest-render-note.js';
-import { oaHandoffTool } from './tools/ingest-oa-handoff.js';
+// Import ISPN read-only query tools
+import { customerLookupTool } from './tools/ispn-customer-lookup.js';
+import { customerDetailsTool } from './tools/ispn-customer-details.js';
+import { customerTicketsTool } from './tools/ispn-customer-tickets.js';
+import { ticketSearchTool } from './tools/ispn-ticket-search.js';
+import { escalationListTool } from './tools/ispn-escalation-list.js';
+import { escalationGetTool } from './tools/ispn-escalation-get.js';
+import { dhcpListTool } from './tools/ispn-dhcp-list.js';
+import { queryCategoryTool } from './tools/ispn-query-categories.js';
+import { accountCheckTool } from './tools/ispn-account-check.js';
 
 /**
  * MCP Server Instance
@@ -60,15 +64,26 @@ const server = new Server(
  * Called by Claude Desktop to discover tools.
  */
 server.setRequestHandler(ListToolsRequestSchema, async () => {
-  logger.info('Listing available tools');
+  logger.info('Listing available ISPN query tools');
 
   return {
     tools: [
-      createTicketTool.definition,
-      appendNoteTool.definition,
-      findOrCreateTicketTool.definition,
-      renderNoteTool.definition,
-      oaHandoffTool.definition,
+      // Customer query tools
+      customerLookupTool.definition,
+      customerDetailsTool.definition,
+      customerTicketsTool.definition,
+
+      // Ticket query tools
+      ticketSearchTool.definition,
+      escalationListTool.definition,
+      escalationGetTool.definition,
+
+      // Network query tools
+      dhcpListTool.definition,
+
+      // Verification & metadata tools
+      queryCategoryTool.definition,
+      accountCheckTool.definition,
     ],
   };
 });
@@ -90,20 +105,36 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
   try {
     switch (name) {
-      case 'helpdesk.create_ticket':
-        return await createTicketTool.handler(args);
+      // Customer query tools
+      case 'ispn.customer.lookup':
+        return await customerLookupTool.handler(args);
 
-      case 'helpdesk.append_note':
-        return await appendNoteTool.handler(args);
+      case 'ispn.customer.get_details':
+        return await customerDetailsTool.handler(args);
 
-      case 'helpdesk.find_or_create_ticket':
-        return await findOrCreateTicketTool.handler(args);
+      case 'ispn.customer.list_tickets':
+        return await customerTicketsTool.handler(args);
 
-      case 'ingest.render_note':
-        return await renderNoteTool.handler(args);
+      // Ticket query tools
+      case 'ispn.ticket.search':
+        return await ticketSearchTool.handler(args);
 
-      case 'ingest.oa_handoff':
-        return await oaHandoffTool.handler(args);
+      case 'ispn.escalation.list':
+        return await escalationListTool.handler(args);
+
+      case 'ispn.escalation.get':
+        return await escalationGetTool.handler(args);
+
+      // Network query tools
+      case 'ispn.dhcp.list':
+        return await dhcpListTool.handler(args);
+
+      // Verification & metadata tools
+      case 'ispn.query.list_categories':
+        return await queryCategoryTool.handler(args);
+
+      case 'ispn.account.check':
+        return await accountCheckTool.handler(args);
 
       default:
         const error = new Error(`Unknown tool: ${name}`);
